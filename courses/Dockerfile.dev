@@ -1,0 +1,7 @@
+FROM golang:1.18
+
+WORKDIR /src/courses/
+
+RUN go install github.com/cosmtrek/air@latest
+
+CMD air -c ".air.conf"

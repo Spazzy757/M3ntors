@@ -8,3 +8,11 @@ services:
       - "3000:3000"
     volumes:
       - ./client:/usr/src/app/m3ntors
+  courses:
+    build:
+      context: ./courses
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./courses:/src/courses
