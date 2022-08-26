@@ -24,7 +24,6 @@ export async function seed(knex: Knex): Promise<void[]> {
   const result1 = await knex.raw(
     `SELECT 1 AS result FROM pg_database WHERE datname='${dbName}'`
   );
-  console.log(result)
   const config: Knex.Config = knex.client.config;
   const newConfig: Knex.Config = {
       ...config,

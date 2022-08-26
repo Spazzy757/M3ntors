@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Migrations and seeds",
   "scripts": {
-    "courses-dev": "knex --env setup seed:run && knex --env migrate migrate:up",
+    "dev": "knex --env containersetup seed:run && knex --env container migrate:up",
     "new-migration": "knex migrate:make -x ts"
   },
   "dependencies": {
