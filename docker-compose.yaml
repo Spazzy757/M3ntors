@@ -17,8 +17,16 @@ services:
     volumes:
       - ./courses:/src/courses
   postgres:
-    image: postgres:14
+    build:
+      context: ./postgres
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      # Add other backend db directories here and postgres will automatically
+      # run `npm run dev` on them (this command should set the database up for
+      # that service)
+      # Make sure to volume the services as:
+      # - ./{backend}/db:/postgres/migrations/{backend}
+      - ./courses/db:/home/postgres/migrations/courses
