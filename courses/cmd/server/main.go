@@ -47,7 +47,7 @@ func main() {
 			}).Fatal("Server Start Fail")
 		}
 	}()
-	fmt.Println(startupLog)
+	fmt.Printf("%v", startupLog)
 	log.WithFields(log.Fields{
 		"host": "0.0.0.0",
 		"port": "8000",
