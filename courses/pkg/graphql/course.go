@@ -1,6 +1,8 @@
 package graphql
 
 import (
+	"context"
+
 	"github.com/graphql-go/graphql"
 	"github.com/spazzy757/m3ntors/courses/pkg/courses"
 )
@@ -35,7 +37,7 @@ var courseType = graphql.NewObject(graphql.ObjectConfig{
 
 // getCourseQuery resolver handle getting a single
 // course by id
-func getCourseQuery() *graphql.Field {
+func (q *GraphQLSetup) getCourseQuery() *graphql.Field {
 	return &graphql.Field{
 		Type:        courseType,
 		Description: "get a single course",
@@ -45,7 +47,13 @@ func getCourseQuery() *graphql.Field {
 			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-			return nil, nil
+			id, _ := params.Args["id"].(string)
+			ch := courses.NewCourseHandler(
+				courses.WithContext(context.TODO()),
+				courses.WithDB(q.Cfg.DB),
+			)
+			course, err := ch.FindByID(id)
+			return course, err
 		},
 	}
 }
@@ -56,6 +64,7 @@ func getCourseListQuery() *graphql.Field {
 		Type:        graphql.NewList(courseType),
 		Description: "List of courses",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			//TODO return list of courses
 			return nil, nil
 		},
 	}

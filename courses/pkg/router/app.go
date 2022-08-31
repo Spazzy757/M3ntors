@@ -5,22 +5,22 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/graphql-go/handler"
+	"github.com/spazzy757/m3ntors/courses/pkg/config"
 	"github.com/spazzy757/m3ntors/courses/pkg/graphql"
 )
 
 type App struct {
 	Router *mux.Router
+	Cfg    *config.Config
 }
 
 //GetRouter returns a mux router for server
 func (a *App) GetRouter() {
 	a.Router = mux.NewRouter()
-	// TODO handle error
-	courseSchema, _ := graphql.GetSchema()
 	a.Router.HandleFunc("/healthz", a.HealthzHandler)
 	a.Router.HandleFunc("/sandbox", a.SandboxHandler)
 	a.Router.Handle("/graphql", handler.New(&handler.Config{
-		Schema:   &courseSchema,
+		Schema:   &graphql.GetGraphQLSetup(graphql.WithConfig(a.Cfg)).Schema,
 		Pretty:   true,
 		GraphiQL: false,
 	}))
