@@ -12,6 +12,8 @@ services:
     build:
       context: ./courses
       dockerfile: Dockerfile.dev
+    env_file:
+      - courses/.env
     ports:
       - "8001:8000"
     volumes:

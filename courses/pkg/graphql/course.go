@@ -53,6 +53,8 @@ func (q *GraphQLSetup) getCourseQuery() *graphql.Field {
 				courses.WithDB(q.Cfg.DB),
 			)
 			course, err := ch.FindByID(id)
+			//TODO if nothing is returned return a "NOT FOUND" error
+			// else just a generic something went wrong error
 			return course, err
 		},
 	}

@@ -47,7 +47,7 @@ func NewCourseHandler(opts ...courseHandlerOptions) *CourseHandler {
 
 func (ch *CourseHandler) FindByID(id string) (*Course, error) {
 	course := new(Course)
-	query := "SELECT * FROM courses WHERE id = ?"
+	query := "SELECT * FROM courses WHERE id = $1"
 	row := ch.db.QueryRowContext(ch.ctx, query, id)
 	err := row.Scan(
 		&course.ID,
@@ -58,5 +58,8 @@ func (ch *CourseHandler) FindByID(id string) (*Course, error) {
 		&course.CreatedAt,
 		&course.UpdatedAt,
 	)
-	return course, err
+	if err != nil {
+		return nil, err
+	}
+	return course, nil
 }
