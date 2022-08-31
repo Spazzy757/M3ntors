@@ -73,7 +73,7 @@ func getCourseListQuery() *graphql.Field {
 }
 
 // addCourseMutation mutation to create a new course
-func addCourseMutation() *graphql.Field {
+func (q *GraphQLSetup) addCourseMutation() *graphql.Field {
 	return &graphql.Field{
 		Type:        courseType,
 		Description: "add a new course",
@@ -84,19 +84,32 @@ func addCourseMutation() *graphql.Field {
 			"link": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.String),
 			},
+			"user": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 			// marshall and cast the argument value
 			name, _ := params.Args["name"].(string)
 			link, _ := params.Args["link"].(string)
+			//TODO get user id from headers
+			user, _ := params.Args["user"].(string)
 			// perform mutation operation here
 			// TODO create a course and save to DB.
-			newCourse := courses.Course{
+			ch := courses.NewCourseHandler(
+				courses.WithContext(context.TODO()),
+				courses.WithDB(q.Cfg.DB),
+			)
+			c, err := ch.Create(&courses.Course{
 				Name:     name,
 				Link:     link,
 				Reviewed: false,
+				User:     user,
+			})
+			if err != nil {
+				return nil, err
 			}
-			return newCourse, nil
+			return c, nil
 		},
 	}
 }

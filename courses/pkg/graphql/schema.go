@@ -26,7 +26,7 @@ func GetGraphQLSetup(opts ...graphqlSetupOptions) *GraphQLSetup {
 	// TODO error handling
 	schema, _ := graphql.NewSchema(graphql.SchemaConfig{
 		Query:    g.getRootQuery(),
-		Mutation: getRootMutation(),
+		Mutation: g.getRootMutation(),
 	})
 	g.Schema = schema
 	return g
@@ -46,11 +46,11 @@ func (g *GraphQLSetup) getRootQuery() *graphql.Object {
 
 // getRootMutation resolves the full mutation schema object
 // used for the graphql endpoint
-func getRootMutation() *graphql.Object {
+func (g *GraphQLSetup) getRootMutation() *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name: "RootMutation",
 		Fields: graphql.Fields{
-			"addCourse":    addCourseMutation(),
+			"addCourse":    g.addCourseMutation(),
 			"updateCourse": updateCourseMutation(),
 		},
 	})

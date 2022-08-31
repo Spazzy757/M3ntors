@@ -9,8 +9,11 @@ export async function up(knex: Knex): Promise<void> {
       table.increments('id').primary();
       table.string('name', 255).notNullable();
       table.string('link', 255).notNullable();
+      table.string('user_id', 255).notNullable();
       table.boolean('reviewed').defaultTo(false);
       table.timestamp('created_at')
+        .defaultTo(knex.fn.now());
+      table.timestamp('updated_at')
         .defaultTo(knex.fn.now());
     })
     .then(() => Promise.all([addUpdatedAt(knex, tableName)]))
