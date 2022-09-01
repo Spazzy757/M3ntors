@@ -24,12 +24,7 @@ var courseQuery = `query course($courseid: String!) {
     }
 }`
 
-var addCourseMutation = `mutation RootMutation(
-		$user: String!, 
-		$name: String!, 
-		$link: String!
-	) 
-	{
+var addCourseMutation = `mutation RootMutation($user: String!, $name: String!, $link: String!) {
 		addCourse(user: $user, name: $name, link: $link) {
 		  name
 		}
@@ -42,37 +37,39 @@ func TestCoursesSchema(t *testing.T) {
 			sqlmock.QueryMatcherEqual,
 		),
 	)
-
 	defer db.Close()
+	assert.NoError(err)
+
 	graphqlSetup := GetGraphQLSetup(
 		WithConfig(&config.Config{
 			DB: db,
 		}),
 	)
 
-	assert.NoError(err)
+	timestamp := time.Now()
+	columns := []string{
+		"id",
+		"name",
+		"link",
+		"reviewed",
+		"user",
+		"created_at",
+		"updated_at",
+	}
+	rows := sqlmock.NewRows(columns).AddRow(
+		123,
+		"Foo",
+		"bar.com",
+		false,
+		"baz123",
+		timestamp,
+		timestamp,
+	)
+
 	t.Run("course resolver returns a course", func(t *testing.T) {
 		vars := make(map[string]interface{})
 		vars["courseid"] = "123"
 		query := "SELECT * FROM courses WHERE id = $1"
-		timestamp := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"id",
-			"name",
-			"link",
-			"reviewed",
-			"user",
-			"created_at",
-			"updated_at",
-		}).AddRow(
-			123,
-			"Foo",
-			"bar.com",
-			false,
-			"baz123",
-			timestamp,
-			timestamp,
-		)
 		mock.ExpectQuery(query).WithArgs("123").WillReturnRows(rows)
 		params := graphql.Params{
 			Schema:         graphqlSetup.Schema,
@@ -87,20 +84,13 @@ func TestCoursesSchema(t *testing.T) {
 		assert.NotContains(fmt.Sprintf("%s", res), "error")
 		assert.Contains(fmt.Sprintf("%s", res), `"id":123`)
 	})
+
 	t.Run("course resolver returns not found", func(t *testing.T) {
 		vars := make(map[string]interface{})
 		vars["courseid"] = "123"
 		query := "SELECT * FROM courses WHERE id = $1"
-		rows := sqlmock.NewRows([]string{
-			"id",
-			"name",
-			"link",
-			"reviewed",
-			"user",
-			"created_at",
-			"updated_at",
-		})
-		mock.ExpectQuery(query).WithArgs("123").WillReturnRows(rows)
+		emptyRows := sqlmock.NewRows(columns)
+		mock.ExpectQuery(query).WithArgs("123").WillReturnRows(emptyRows)
 		params := graphql.Params{
 			Schema:         graphqlSetup.Schema,
 			VariableValues: vars,
@@ -114,30 +104,13 @@ func TestCoursesSchema(t *testing.T) {
 		assert.Contains(fmt.Sprintf("%s", res), "error")
 		assert.Contains(fmt.Sprintf("%s", res), `"course":null`)
 	})
-	t.Run("addCourse mutation returns a course", func(t *testing.T) {
+
+	t.Run("addcourse mutation returns a course", func(t *testing.T) {
 		vars := make(map[string]interface{})
 		vars["name"] = "Foo"
 		vars["link"] = "bar.com"
 		vars["user"] = "user123"
 		q := `INSERT INTO courses (name, link, reviewed, user_id) VALUES ($1, $2, $3, $4) RETURNING *;`
-		timestamp := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"id",
-			"name",
-			"link",
-			"reviewed",
-			"user",
-			"created_at",
-			"updated_at",
-		}).AddRow(
-			123,
-			"Foo",
-			"bar.com",
-			false,
-			"baz123",
-			timestamp,
-			timestamp,
-		)
 		mock.ExpectBegin()
 		mock.ExpectPrepare(q)
 		mock.ExpectQuery(q).WithArgs("Foo", "bar.com", false, "user123").WillReturnRows(rows)

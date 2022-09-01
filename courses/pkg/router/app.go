@@ -7,6 +7,7 @@ import (
 	"github.com/graphql-go/handler"
 	"github.com/spazzy757/m3ntors/courses/pkg/config"
 	"github.com/spazzy757/m3ntors/courses/pkg/graphql"
+	"github.com/spazzy757/m3ntors/courses/pkg/middleware"
 )
 
 type App struct {
@@ -16,14 +17,21 @@ type App struct {
 
 //GetRouter returns a mux router for server
 func (a *App) GetRouter() {
-	a.Router = mux.NewRouter()
-	a.Router.HandleFunc("/healthz", a.HealthzHandler)
-	a.Router.HandleFunc("/sandbox", a.SandboxHandler)
-	a.Router.Handle("/graphql", handler.New(&handler.Config{
+
+	gh := handler.New(&handler.Config{
 		Schema:   &graphql.GetGraphQLSetup(graphql.WithConfig(a.Cfg)).Schema,
 		Pretty:   true,
 		GraphiQL: false,
-	}))
+	})
+
+	m := middleware.New(
+		middleware.WithConfig(a.Cfg),
+	)
+
+	a.Router = mux.NewRouter()
+	a.Router.HandleFunc("/healthz", a.HealthzHandler)
+	a.Router.HandleFunc("/sandbox", a.SandboxHandler)
+	a.Router.Handle("/graphql", m.SetUserContext(gh))
 }
 
 // HealthzHandler

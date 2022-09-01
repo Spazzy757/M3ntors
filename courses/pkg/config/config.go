@@ -2,10 +2,12 @@ package config
 
 import (
 	"database/sql"
+	"os"
 )
 
 type Config struct {
-	DB *sql.DB
+	DB         *sql.DB
+	AuthSecret string
 }
 
 type configOptions func(*Config)
@@ -19,10 +21,13 @@ func WithDBConnection(db *sql.DB) configOptions {
 
 // NewConfig used to setup configuration
 func NewConfig(opts ...configOptions) *Config {
-	c := &Config{}
+	c := &Config{
+		AuthSecret: os.Getenv("AUTH_SECRET"),
+	}
 	// set options
 	for _, opt := range opts {
 		opt(c)
 	}
+
 	return c
 }

@@ -89,13 +89,10 @@ func (q *GraphQLSetup) addCourseMutation() *graphql.Field {
 			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-			// marshall and cast the argument value
 			name, _ := params.Args["name"].(string)
 			link, _ := params.Args["link"].(string)
 			//TODO get user id from headers
 			user, _ := params.Args["user"].(string)
-			// perform mutation operation here
-			// TODO create a course and save to DB.
 			ch := courses.NewCourseHandler(
 				courses.WithContext(context.TODO()),
 				courses.WithDB(q.Cfg.DB),
