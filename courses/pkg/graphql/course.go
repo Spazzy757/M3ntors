@@ -2,9 +2,11 @@ package graphql
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/graphql-go/graphql"
 	"github.com/spazzy757/m3ntors/courses/pkg/courses"
+	"github.com/spazzy757/m3ntors/courses/pkg/middleware"
 )
 
 // Structure of a course for Graphql
@@ -64,7 +66,7 @@ func (q *GraphQLSetup) getCourseQuery() *graphql.Field {
 func getCourseListQuery() *graphql.Field {
 	return &graphql.Field{
 		Type:        graphql.NewList(courseType),
-		Description: "List of courses",
+		Description: "list of courses",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			//TODO return list of courses
 			return nil, nil
@@ -84,15 +86,17 @@ func (q *GraphQLSetup) addCourseMutation() *graphql.Field {
 			"link": &graphql.ArgumentConfig{
 				Type: graphql.NewNonNull(graphql.String),
 			},
-			"user": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.String),
-			},
 		},
-		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-			name, _ := params.Args["name"].(string)
-			link, _ := params.Args["link"].(string)
-			//TODO get user id from headers
-			user, _ := params.Args["user"].(string)
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			u := middleware.GetUserFromContext(p.Context)
+			if u == nil {
+				return nil, fmt.Errorf(
+					"authentication: %s",
+					"could not find user, are you loged in?",
+				)
+			}
+			name, _ := p.Args["name"].(string)
+			link, _ := p.Args["link"].(string)
 			ch := courses.NewCourseHandler(
 				courses.WithContext(context.TODO()),
 				courses.WithDB(q.Cfg.DB),
@@ -101,7 +105,7 @@ func (q *GraphQLSetup) addCourseMutation() *graphql.Field {
 				Name:     name,
 				Link:     link,
 				Reviewed: false,
-				User:     user,
+				User:     u.ID,
 			})
 			if err != nil {
 				return nil, err

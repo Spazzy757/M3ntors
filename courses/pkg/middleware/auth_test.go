@@ -21,7 +21,7 @@ func TestSetUserInContext(t *testing.T) {
 
 	t.Run("authentication user", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			val := r.Context().Value(userkey)
+			val := r.Context().Value(UserKey)
 			assert.Equal(val, "foobar")
 			w.WriteHeader(http.StatusCreated)
 		})
@@ -39,7 +39,7 @@ func TestSetUserInContext(t *testing.T) {
 	})
 	t.Run("unauthentication user", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			val := r.Context().Value(userkey)
+			val := r.Context().Value(UserKey)
 			assert.Nil(val)
 			w.WriteHeader(http.StatusCreated)
 		})
@@ -51,7 +51,7 @@ func TestSetUserInContext(t *testing.T) {
 	})
 	t.Run("invalid token", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			val := r.Context().Value(userkey)
+			val := r.Context().Value(UserKey)
 			assert.Nil(val)
 			w.WriteHeader(http.StatusCreated)
 		})
@@ -67,10 +67,9 @@ func TestSetUserInContext(t *testing.T) {
 		mockHandler.ServeHTTP(res, req)
 		assert.Equal(res.Code, http.StatusCreated)
 	})
-
 	t.Run("invalid claim", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			val := r.Context().Value(userkey)
+			val := r.Context().Value(UserKey)
 			assert.Nil(val)
 			w.WriteHeader(http.StatusCreated)
 		})

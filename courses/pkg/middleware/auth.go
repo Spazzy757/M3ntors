@@ -13,12 +13,29 @@ type Middleware struct {
 	cfg *config.Config
 }
 
+type User struct {
+	ID string
+}
+
 type middlewareOptions func(*Middleware)
 
-type userContextKey string
+type contextKey string
 
-const userkey userContextKey = "user"
+const UserKey contextKey = "user"
 
+// GetUserFromContext gets data from the context to return the user
+func GetUserFromContext(ctx context.Context) *User {
+	id := ctx.Value(UserKey)
+	if id != nil {
+		return &User{
+			ID: id.(string),
+		}
+	}
+	return nil
+}
+
+// WithConfig sets the configuration on the middleware
+// struct
 func WithConfig(cfg *config.Config) middlewareOptions {
 	return func(m *Middleware) {
 		m.cfg = cfg
@@ -34,8 +51,12 @@ func New(opts ...middlewareOptions) *Middleware {
 	return m
 }
 
+// SetUserContext is middleware to set the "user" context with teh sub (id)
+// from a JWT token if it exists. It pushes the job of handeling authentication
+// to the individual graphql resolvers
 func (m *Middleware) SetUserContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		tokenString := r.Header.Get("Authorization")
 		//Hack to remove the Bearer part of the header
 		tokenString = strings.ReplaceAll(tokenString, "Bearer ", "")
@@ -45,13 +66,25 @@ func (m *Middleware) SetUserContext(next http.Handler) http.Handler {
 			// and errors or issues will just result in a anonymous user
 			return []byte(m.cfg.AuthSecret), nil
 		})
-		if err == nil && t.Valid {
-			if claims, ok := t.Claims.(jwt.MapClaims); ok {
-				ctx := context.WithValue(r.Context(), userkey, claims["sub"])
-				next.ServeHTTP(w, r.WithContext(ctx))
-			}
-		} else {
-			next.ServeHTTP(w, r)
+
+		if err == nil {
+			ctx = m.addUserToContext(ctx, t)
 		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// addUserToContext will add the user id to the context and return it
+func (m *Middleware) addUserToContext(
+	ctx context.Context,
+	t *jwt.Token,
+) context.Context {
+	if t.Valid {
+		if claims, ok := t.Claims.(jwt.MapClaims); ok {
+			//TODO use the rest of the claims to create a user
+			ctx = context.WithValue(ctx, UserKey, claims["sub"])
+		}
+	}
+	return ctx
 }

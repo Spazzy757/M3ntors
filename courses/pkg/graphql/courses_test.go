@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/graphql-go/graphql"
 	"github.com/spazzy757/m3ntors/courses/pkg/config"
+	"github.com/spazzy757/m3ntors/courses/pkg/middleware"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,28 +26,14 @@ var courseQuery = `query course($courseid: String!) {
     }
 }`
 
-var addCourseMutation = `mutation RootMutation($user: String!, $name: String!, $link: String!) {
-		addCourse(user: $user, name: $name, link: $link) {
+var addCourseMutation = `mutation RootMutation($name: String!, $link: String!) {
+		addCourse(name: $name, link: $link) {
 		  name
 		}
 }`
 
 func TestCoursesSchema(t *testing.T) {
 	assert := require.New(t)
-	db, mock, err := sqlmock.New(
-		sqlmock.QueryMatcherOption(
-			sqlmock.QueryMatcherEqual,
-		),
-	)
-	defer db.Close()
-	assert.NoError(err)
-
-	graphqlSetup := GetGraphQLSetup(
-		WithConfig(&config.Config{
-			DB: db,
-		}),
-	)
-
 	timestamp := time.Now()
 	columns := []string{
 		"id",
@@ -67,6 +55,20 @@ func TestCoursesSchema(t *testing.T) {
 	)
 
 	t.Run("course resolver returns a course", func(t *testing.T) {
+		db, mock, err := sqlmock.New(
+			sqlmock.QueryMatcherOption(
+				sqlmock.QueryMatcherEqual,
+			),
+		)
+		defer db.Close()
+		assert.NoError(err)
+
+		graphqlSetup := GetGraphQLSetup(
+			WithConfig(&config.Config{
+				DB: db,
+			}),
+		)
+
 		vars := make(map[string]interface{})
 		vars["courseid"] = "123"
 		query := "SELECT * FROM courses WHERE id = $1"
@@ -86,6 +88,20 @@ func TestCoursesSchema(t *testing.T) {
 	})
 
 	t.Run("course resolver returns not found", func(t *testing.T) {
+		db, mock, err := sqlmock.New(
+			sqlmock.QueryMatcherOption(
+				sqlmock.QueryMatcherEqual,
+			),
+		)
+		defer db.Close()
+		assert.NoError(err)
+
+		graphqlSetup := GetGraphQLSetup(
+			WithConfig(&config.Config{
+				DB: db,
+			}),
+		)
+
 		vars := make(map[string]interface{})
 		vars["courseid"] = "123"
 		query := "SELECT * FROM courses WHERE id = $1"
@@ -106,26 +122,52 @@ func TestCoursesSchema(t *testing.T) {
 	})
 
 	t.Run("addcourse mutation returns a course", func(t *testing.T) {
+		db, mock, err := sqlmock.New(
+			sqlmock.QueryMatcherOption(
+				sqlmock.QueryMatcherEqual,
+			),
+		)
+		defer db.Close()
+		assert.NoError(err)
+
+		graphqlSetup := GetGraphQLSetup(
+			WithConfig(&config.Config{
+				DB: db,
+			}),
+		)
+
 		vars := make(map[string]interface{})
-		vars["name"] = "Foo"
+		vars["name"] = "foo"
 		vars["link"] = "bar.com"
-		vars["user"] = "user123"
 		q := `INSERT INTO courses (name, link, reviewed, user_id) VALUES ($1, $2, $3, $4) RETURNING *;`
-		mock.ExpectBegin()
-		mock.ExpectPrepare(q)
-		mock.ExpectQuery(q).WithArgs("Foo", "bar.com", false, "user123").WillReturnRows(rows)
-		mock.ExpectCommit()
+		mock.ExpectQuery(q).WithArgs(
+			"foo",
+			"bar.com",
+			false,
+			"user123",
+		).WillReturnRows(sqlmock.NewRows(columns).AddRow(
+			123,
+			"Foo",
+			"bar.com",
+			false,
+			"baz123",
+			timestamp,
+			timestamp,
+		))
+		ctx := context.TODO()
+		ctx = context.WithValue(ctx, middleware.UserKey, "user123")
 		params := graphql.Params{
 			Schema:         graphqlSetup.Schema,
 			VariableValues: vars,
 			RequestString:  addCourseMutation,
 		}
+		params.Context = ctx
 		r := graphql.Do(params)
 		res, err := json.Marshal(r)
 		assert.NoError(err)
-		err = mock.ExpectationsWereMet()
-		assert.NoError(err)
 		assert.NotContains(fmt.Sprintf("%s", res), "error")
 		assert.Contains(fmt.Sprintf("%s", res), `"name":"Foo"`)
+		err = mock.ExpectationsWereMet()
+		assert.NoError(err)
 	})
 }

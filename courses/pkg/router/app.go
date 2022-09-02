@@ -21,7 +21,7 @@ func (a *App) GetRouter() {
 	gh := handler.New(&handler.Config{
 		Schema:   &graphql.GetGraphQLSetup(graphql.WithConfig(a.Cfg)).Schema,
 		Pretty:   true,
-		GraphiQL: false,
+		GraphiQL: true,
 	})
 
 	m := middleware.New(
