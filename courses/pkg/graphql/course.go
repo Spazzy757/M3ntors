@@ -1,7 +1,6 @@
 package graphql
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/graphql-go/graphql"
@@ -48,13 +47,12 @@ func (q *GraphQLSetup) getCourseQuery() *graphql.Field {
 				Type: graphql.String,
 			},
 		},
-		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-			id, _ := params.Args["id"].(string)
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			id, _ := p.Args["id"].(string)
 			ch := courses.NewCourseHandler(
-				courses.WithContext(context.TODO()),
 				courses.WithDB(q.Cfg.DB),
 			)
-			course, err := ch.FindByID(id)
+			course, err := ch.FindByID(p.Context, id)
 			//TODO if nothing is returned return a "NOT FOUND" error
 			// else just a generic something went wrong error
 			return course, err
@@ -98,10 +96,9 @@ func (q *GraphQLSetup) addCourseMutation() *graphql.Field {
 			name, _ := p.Args["name"].(string)
 			link, _ := p.Args["link"].(string)
 			ch := courses.NewCourseHandler(
-				courses.WithContext(context.TODO()),
 				courses.WithDB(q.Cfg.DB),
 			)
-			c, err := ch.Create(&courses.Course{
+			c, err := ch.Create(p.Context, &courses.Course{
 				Name:     name,
 				Link:     link,
 				Reviewed: false,
@@ -121,6 +118,9 @@ func updateCourseMutation() *graphql.Field {
 		Type:        courseType, // the return type for this field
 		Description: "Update existing course",
 		Args: graphql.FieldConfigArgument{
+			"id": &graphql.ArgumentConfig{
+				Type: graphql.String,
+			},
 			"name": &graphql.ArgumentConfig{
 				Type: graphql.String,
 			},

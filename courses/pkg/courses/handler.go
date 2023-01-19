@@ -9,18 +9,10 @@ import (
 )
 
 type CourseHandler struct {
-	ctx context.Context
-	db  *sql.DB
+	db *sql.DB
 }
 
 type courseHandlerOptions func(*CourseHandler)
-
-// WithContext used to set the context of the course handler
-func WithContext(ctx context.Context) courseHandlerOptions {
-	return func(ch *CourseHandler) {
-		ch.ctx = ctx
-	}
-}
 
 // WithDB used to set the database connection on the
 // course handler
@@ -40,10 +32,10 @@ func NewCourseHandler(opts ...courseHandlerOptions) *CourseHandler {
 }
 
 // FindByID takes an ID and queries db for a single course
-func (ch *CourseHandler) FindByID(id string) (*Course, error) {
+func (ch *CourseHandler) FindByID(ctx context.Context, id string) (*Course, error) {
 	course := new(Course)
 	query := "SELECT * FROM courses WHERE id = $1"
-	row := ch.db.QueryRowContext(ch.ctx, query, id)
+	row := ch.db.QueryRowContext(ctx, query, id)
 	err := row.Scan(
 		&course.ID,
 		&course.Name,
@@ -61,10 +53,10 @@ func (ch *CourseHandler) FindByID(id string) (*Course, error) {
 
 // Create takes a course and inserts it into the database and retruns
 // the full course resource
-func (ch *CourseHandler) Create(c *Course) (*Course, error) {
+func (ch *CourseHandler) Create(ctx context.Context, c *Course) (*Course, error) {
 	q := `INSERT INTO courses (name, link, reviewed, user_id) VALUES ($1, $2, $3, $4) RETURNING *;`
 	fmt.Printf("%v %v %v %v", c.Name, c.Link, c.Reviewed, c.User)
-	row := ch.db.QueryRowContext(ch.ctx, q, c.Name, c.Link, c.Reviewed, c.User)
+	row := ch.db.QueryRowContext(ctx, q, c.Name, c.Link, c.Reviewed, c.User)
 	err := row.Scan(
 		&c.ID,
 		&c.Name,

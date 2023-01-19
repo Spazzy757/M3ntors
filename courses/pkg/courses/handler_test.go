@@ -22,7 +22,6 @@ func TestCoursesHandler(t *testing.T) {
 	ctx := context.TODO()
 	ctx = context.WithValue(ctx, middleware.UserKey, "foobar")
 	h := NewCourseHandler(
-		WithContext(ctx),
 		WithDB(db),
 	)
 	timestamp := time.Now()
@@ -57,7 +56,7 @@ func TestCoursesHandler(t *testing.T) {
 			false,
 			"user123",
 		).WillReturnRows(rows)
-		h.Create(&Course{
+		h.Create(ctx, &Course{
 			Name:     "Foo",
 			Link:     "bar.com",
 			Reviewed: false,
